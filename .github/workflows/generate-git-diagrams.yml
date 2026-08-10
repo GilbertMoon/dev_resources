@@ -1,0 +1,46 @@
+name: Generate Git diagrams
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/generate_git_diagrams.py'
+      - '.github/workflows/generate-git-diagrams.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies and Korean fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+          python -m pip install --upgrade pip
+          pip install pillow
+
+      - name: Generate PNG diagrams
+        run: python scripts/generate_git_diagrams.py
+
+      - name: Commit generated diagrams
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add posts/git/02_git_github_collaboration/images/*.png
+          if git diff --cached --quiet; then
+            echo "No diagram changes"
+          else
+            git commit -m "docs: generate Git collaboration diagrams"
+            git push
+          fi
